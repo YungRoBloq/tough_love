@@ -11,7 +11,7 @@ CUR = CONN.cursor()
 #Write UV Data
 def write_uv_data(data: dict) -> tuple:
     sensor_id = data["sensor_id"]
-    uv_index = data["uv_index"]
+    uv_index = data["value"]
     timestamp = datetime.now()
 
     add_sql = "INSERT INTO UV_Data (sensor_id, uv_index, time_stamp) VALUES (?, ?, ?)"
@@ -26,6 +26,22 @@ def write_uv_data(data: dict) -> tuple:
     except Exception as e:
         return(False, e)
 
+#Write AQ Data
+def write_aq_data(data:dict) -> tuple:
+    sensor_id = data["sensor_id"]
+    aq_index = data["value"]
+    timestamp = datetime.now()
+
+    add_sql = "INSERT INTO AQ_Data (sensor_id, aq_index, time_stamp) VALUES (?, ?, ?)"
+    values = (sensor_id, aq_index, timestamp)
+
+    try:
+        CUR.execute(add_sql, values)
+        CONN.commit()
+
+        return (True, )
+    except Exception as e:
+        return(False, e)
 
 
 #Determing if allowed to send notification
