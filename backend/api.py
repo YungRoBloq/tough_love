@@ -45,11 +45,6 @@ async def lifespan(app: FastAPI):
 # Create the app with the lifespan hook
 app = FastAPI(lifespan=lifespan)
 
-# HTTP endpoint to return shared data
-@app.get("/data")
-async def get_data():
-    return shared_data
-
 # WebSocket endpoint
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
