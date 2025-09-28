@@ -43,6 +43,31 @@ def write_aq_data(data:dict) -> tuple:
     except Exception as e:
         return(False, e)
 
+#Read latest aq data
+def read_aq_data() -> dict:
+    query = "SELECT * FROM AQ_Data WHERE reading_id = (SELECT MAX(reading_id) FROM AQ_Data)"
+    latest_aq_data = CUR.execute(query).fetchall()[0]
+
+    structure = {
+        "sensor_id": latest_aq_data[1],
+        "value": latest_aq_data[2],
+        "timestamp": latest_aq_data[3]
+    }
+
+    return structure
+
+def read_uv_data() -> dict:
+    query = "SELECT * FROM UV_Data WHERE reading_id = (SELECT MAX(reading_id) FROM UV_Data)"
+    latest_uv_data = CUR.execute(query).fetchall()[0]
+
+    structure = {
+        "sensor_id": latest_uv_data[1],
+        "value": latest_uv_data[2],
+        "timestamp": latest_uv_data[3]
+    }
+
+    return structure
+
 
 #Determing if allowed to send notification
 #This is to make sure that the user is not notified to frequently
@@ -69,3 +94,6 @@ def can_send_noti() -> tuple:
 #Add log of notification
 def write_notification():
     pass
+
+
+read_aq_data()
