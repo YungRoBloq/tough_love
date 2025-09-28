@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Sensor Dashboard</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; color: #333; margin: 0; padding: 20px; }
+        .dashboard-container { max-width: 800px; margin: auto; background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
+        h1 { text-align: center; color: #1a73e8; }
+        .sensor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; margin-bottom: 30px; text-align: center; }
+        .sensor-card { background-color: #e8f0fe; padding: 20px; border-radius: 8px; }
+        .sensor-card h3 { margin: 0 0 10px 0; color: #1967d2; }
+        .sensor-value { font-size: 2.5em; font-weight: bold; color: #000; }
+        .chart-container { width: 100%; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <h1>Live Air & UV Sensor Data 🛰️</h1>
+        <div class="sensor-grid">
+            <div class="sensor-card"><h3>PM2.5 (µg/m³)</h3><p class="sensor-value" id="pm25-value">--</p></div>
+            <div class="sensor-card"><h3>VOC Index</h3><p class="sensor-value" id="voc-value">--</p></div>
+            <div class="sensor-card"><h3>UV Index</h3><p class="sensor-value" id="uv-value">--</p></div>
+        </div>
+        <div class="chart-container"><canvas id="sensorChart"></canvas></div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Use the native WebSocket API to connect
+            const socket = new WebSocket('ws://192.168.8.3:8000/ws');
+
+            const pm25Value = document.getElementById('pm25-value');
+            const vocValue = document.getElementById('voc-value');
+            const uvValue = document.getElementById('uv-value');
+            const ctx = document.getElementById('sensorChart').getContext('2d');
+
+            const sensorChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'PM2.5 (µg/m³)', data: [], borderColor: 'rgba(255, 99, 132, 1)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)', borderWidth: 2, tension: 0.3
+                    }, {
+                        label: 'UV Index', data: [], borderColor: 'rgba(54, 162, 235, 1)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)', borderWidth: 2, tension: 0.3
+                    }]
+                },
+                options: { scales: { y: { beginAtZero: true } }, animation: { duration: 500 } }
+            });
+
+            const MAX_DATA_POINTS = 30;
+
+            // Listen for messages from the server
+            socket.onmessage = (event) => {
+                const data = JSON.parse(event.data); // Parse the incoming JSON string
+
+                pm25Value.textContent = data.pm25;
+                vocValue.textContent = data.voc;
+                uvValue.textContent = data.uv;
+
+                sensorChart.data.labels.push(data.timestamp);
+                sensorChart.data.datasets[0].data.push(data.pm25);
+                sensorChart.data.datasets[1].data.push(data.uv);
+
+                if (sensorChart.data.labels.length > MAX_DATA_POINTS) {
+                    sensorChart.data.labels.shift();
+                    sensorChart.data.datasets.forEach((dataset) => { dataset.data.shift(); });
+                }
+                sensorChart.update();
+            };
+
+            // Optional: Handle connection open and close events
+            socket.onopen = () => console.log("WebSocket connection established.");
+            socket.onclose = () => console.log("WebSocket connection closed.");
+            socket.onerror = (error) => console.error("WebSocket error:", error);
+        });
+    </script>
+</body>
+</html>
