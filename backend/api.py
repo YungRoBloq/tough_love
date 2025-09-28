@@ -45,18 +45,21 @@ async def lifespan(app: FastAPI):
 # Create the app with the lifespan hook
 app = FastAPI(lifespan=lifespan)
 
-# HTTP endpoint to return shared data
-@app.get("/data")
-async def get_data():
-    return shared_data
-
 # WebSocket endpoint
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     try:
         while True:
-            await websocket.send_text(json.dumps(shared_data))
+            ad_data = database_functions.read_aq_data()
+            uv_data = database_functions.read_uv_data()
+
+            structure = {
+                "ad_data": ad_data,
+                "uv_data": uv_data
+            }
+
+            await websocket.send_text(json.dumps(structure))
             await asyncio.sleep(1)
     except Exception as e:
         print("WebSocket connection closed:", e)
