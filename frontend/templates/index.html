@@ -1,13 +1,108 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <title>
-            Tough Love
-        </title>
-    </head>
-    <body>
-        <h1>
-            Tough Love
-        </h1>
-    </body>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Sensor Dashboard</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; color: #333; margin: 0; padding: 20px; }
+        .dashboard-container { max-width: 800px; margin: auto; background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
+        h1 { text-align: center; color: #1a73e8; }
+        .sensor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; text-align: center; }
+        .sensor-card { background-color: #e8f0fe; padding: 20px; border-radius: 8px; }
+        .sensor-card h3 { margin: 0 0 10px 0; color: #1967d2; }
+        .sensor-value { font-size: 2.5em; font-weight: bold; }
+        /* Color classes for air quality status */
+        .good { color: #34a853; }      /* Green */
+        .moderate { color: #fbbc05; } /* Yellow */
+        .bad { color: #ea4335; }      /* Red */
+        .chart-container { width: 100%; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <h1>Live Sensor Dashboard 🛰️</h1>
+        <div class="sensor-grid">
+            <div class="sensor-card">
+                <h3>Air Quality</h3>
+                <p class="sensor-value" id="air-quality-status">--</p>
+            </div>
+            <div class="sensor-card">
+                <h3>UV Index</h3>
+                <p class="sensor-value" id="uv-value">--</p>
+            </div>
+        </div>
+        <div class="chart-container"><canvas id="sensorChart"></canvas></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const socket = new WebSocket('ws://192.168.8.3:8000/ws');
+
+            const airQualityStatus = document.getElementById('air-quality-status');
+            const uvValue = document.getElementById('uv-value');
+            const ctx = document.getElementById('sensorChart').getContext('2d');
+            const sensorChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'UV Index', data: [], borderColor: 'rgba(54, 162, 235, 1)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)', borderWidth: 2, tension: 0.3
+                    }]
+                },
+                options: { scales: { y: { beginAtZero: true } }, animation: { duration: 500 } }
+            });
+
+            const MAX_DATA_POINTS = 30;
+
+            const getAirQualityStatus = (aqValue) => {
+                if (aqValue <= 21666) {
+                    return { status: 'Good', className: 'good' };
+                } else if (aqValue <= 43333) {
+                    return { status: 'Moderate', className: 'moderate' };
+                } else {
+                    return { status: 'Bad', className: 'bad' };
+                }
+            };
+
+            socket.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                
+                // ---- EDITED SECTION STARTS HERE ----
+
+                // Get values from the new nested structure
+                const airQualityValue = data.aq_data.value;
+                const uvIndexValue = data.uv_data.value;
+                const timestamp = data.aq_data.timestamp;
+
+                // Format the timestamp to be cleaner for the chart (e.g., "19:18:30")
+                const formattedTime = timestamp.split(' ')[1].split('.')[0];
+                
+                const quality = getAirQualityStatus(airQualityValue);
+
+                airQualityStatus.textContent = quality.status;
+                airQualityStatus.className = `sensor-value ${quality.className}`;
+
+                uvValue.textContent = uvIndexValue;
+
+                sensorChart.data.labels.push(formattedTime);
+                sensorChart.data.datasets[0].data.push(uvIndexValue);
+
+                // ---- EDITED SECTION ENDS HERE ----
+
+                if (sensorChart.data.labels.length > MAX_DATA_POINTS) {
+                    sensorChart.data.labels.shift();
+                    sensorChart.data.datasets[0].data.shift();
+                }
+                sensorChart.update();
+            };
+
+            socket.onopen = () => console.log("WebSocket connection established.");
+            socket.onclose = () => console.log("WebSocket connection closed.");
+            socket.onerror = (error) => console.error("WebSocket error:", error);
+        });
+    </script>
+</body>
 </html>
