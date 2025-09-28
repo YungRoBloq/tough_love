@@ -12,10 +12,10 @@
         .sensor-card { background-color: #e8f0fe; padding: 20px; border-radius: 8px; }
         .sensor-card h3 { margin: 0 0 10px 0; color: #1967d2; }
         .sensor-value { font-size: 2.5em; font-weight: bold; }
-        /* Color classes for air quality status */
-        .good { color: #34a853; }      /* Green */
-        .moderate { color: #fbbc05; } /* Yellow */
-        .bad { color: #ea4335; }      /* Red */
+  
+        .good { color: #34a853; }
+        .moderate { color: #fbbc05; }
+        .bad { color: #ea4335; }
         .chart-container { width: 100%; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -69,15 +69,11 @@
 
             socket.onmessage = (event) => {
                 const data = JSON.parse(event.data);
-                
-                // ---- EDITED SECTION STARTS HERE ----
 
-                // Get values from the new nested structure
                 const airQualityValue = data.aq_data.value;
                 const uvIndexValue = data.uv_data.value;
                 const timestamp = data.aq_data.timestamp;
 
-                // Format the timestamp to be cleaner for the chart (e.g., "19:18:30")
                 const formattedTime = timestamp.split(' ')[1].split('.')[0];
                 
                 const quality = getAirQualityStatus(airQualityValue);
@@ -89,8 +85,6 @@
 
                 sensorChart.data.labels.push(formattedTime);
                 sensorChart.data.datasets[0].data.push(uvIndexValue);
-
-                // ---- EDITED SECTION ENDS HERE ----
 
                 if (sensorChart.data.labels.length > MAX_DATA_POINTS) {
                     sensorChart.data.labels.shift();
