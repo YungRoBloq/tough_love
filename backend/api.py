@@ -56,7 +56,17 @@ async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     try:
         while True:
-            await websocket.send_text(json.dumps(shared_data))
+            aq_data = database_functions.read_aq_data()
+            uv_data = database_functions.read_uv_data()
+
+            structure = {
+                "aq_data": aq_data,
+                "uv_data": uv_data
+            } 
+
+
+            await websocket.send_text(json.dumps(structure))
+            print(f"Sent: {structure}")
             await asyncio.sleep(1)
     except Exception as e:
         print("WebSocket connection closed:", e)
